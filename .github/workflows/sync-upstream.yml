@@ -1,0 +1,35 @@
+# Keeps this fork's main branch in sync with intel/enterprise-agent-toolkit.
+#
+# Lives on the fork-sync branch, which must be the fork's default branch:
+# scheduled workflows only run from the default branch, and keeping this file
+# off main lets main stay an exact, fast-forwardable copy of upstream.
+#
+# Requires repository secret SYNC_TOKEN: a fine-grained PAT scoped to this fork
+# with Contents: read/write and Workflows: read/write (GITHUB_TOKEN cannot push
+# upstream commits that touch .github/workflows).
+name: Sync main with upstream
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'   # every 6 hours (UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Sync main from intel/enterprise-agent-toolkit
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: |
+          gh repo sync "$GITHUB_REPOSITORY" \
+            --source intel/enterprise-agent-toolkit \
+            --branch main
